@@ -3,6 +3,8 @@ package com.example.repository;
 import com.example.model.User;
 import net.bytebuddy.implementation.bind.annotation.*;
 import org.springframework.stereotype.Repository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,6 +13,7 @@ import java.util.concurrent.Callable;
 
 @Repository
 public class UserRepository {
+    private static final Logger logger = LoggerFactory.getLogger(UserRepository.class);
     private final ConcurrentHashMap<Long, User> users = new ConcurrentHashMap<>();
     private final AtomicLong idGenerator = new AtomicLong(1);
 
@@ -42,15 +45,18 @@ public class UserRepository {
     @RuntimeType
     public static Object intercept(@Origin String method,
                                  @AllArguments Object[] args,
-                                 @SuperCall Callable<?> callable) {
+                                 @SuperCall Callable<?> callable,
+                                 @This Object target) {
         long startTime = System.nanoTime();
         try {
-            return callable.call();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
+            Object result = callable.call();
             long endTime = System.nanoTime();
-            System.out.printf("Method %s took %d ns%n", method, (endTime - startTime));
+            logger.info("Method {} took {} ns", method, (endTime - startTime));
+            return result;
+        } catch (Exception e) {
+            long endTime = System.nanoTime();
+            logger.error("Method {} failed after {} ns", method, (endTime - startTime), e);
+            throw new RuntimeException(e);
         }
     }
 } 

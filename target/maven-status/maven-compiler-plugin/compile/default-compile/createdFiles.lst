@@ -1,3 +1,4 @@
+com/example/config/ByteBuddyConfig.class
 com/example/model/User.class
 com/example/repository/UserRepository.class
 com/example/Application.class

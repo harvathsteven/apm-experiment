@@ -97,4 +97,33 @@ You can visualize distributed traces using Jaeger and the OpenTelemetry Collecto
    git clone <your-repo-url>
    cd apm-experiment
    ```
-2. Follow the steps above to build, run, and visualize traces. 
+2. Follow the steps above to build, run, and visualize traces.
+
+## ByteBuddy Runtime Instrumentation
+
+This project uses [ByteBuddy](https://bytebuddy.net/) to instrument the `UserRepository` at runtime. When the application starts, ByteBuddy redefines the repository class so that all public, non-static methods are intercepted. The interceptor logs the execution time of each method call.
+
+### How it works
+- On application startup, ByteBuddy redefines `UserRepository` using a runtime agent.
+- All public, non-static methods are intercepted by a static interceptor method.
+- When you call any API endpoint that uses the repository, you will see log output like:
+  
+  ```
+  2025-06-12 15:00:00 [http-nio-8080-exec-1] INFO  com.example.repository.UserRepository - Method save took 123456 ns
+  ```
+
+### Troubleshooting
+- If you do not see timing logs after hitting repository endpoints, ensure:
+  - The application is running with Java 17+.
+  - You are using the provided `pom.xml` and have not removed ByteBuddy dependencies.
+  - You are making requests to endpoints that use the repository (e.g., `/api/users`).
+- If you see errors related to ByteBuddy or method delegation, ensure the interceptor method signature matches the repository methods (see `UserRepository.java`).
+
+### Example usage
+After starting the app, run:
+
+```sh
+curl -X POST http://localhost:8080/api/users -H "Content-Type: application/json" -d '{"name":"Alice","email":"alice@example.com"}'
+```
+
+You should see a log line in the console with the method timing. 
